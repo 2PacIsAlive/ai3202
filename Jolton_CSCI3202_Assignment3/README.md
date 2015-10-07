@@ -1,7 +1,7 @@
 # ai3202
 Jared Jolton / Repository for Fall 2015 CSCI-3202 coursework at CU Boulder
 
-<p>This repository currently contains the files for assignment 3, A* pathfinding. 
+<p>This folder contains the files for assignment 3, A* pathfinding. 
 Run the code with 2 command line arguments:</p>
   <p>1) The world to explore (either World1.txt or World2.txt)<br>
   2) The heuristic to use (1, 2, 3, or 4). These heuristics are explained below.</p>
