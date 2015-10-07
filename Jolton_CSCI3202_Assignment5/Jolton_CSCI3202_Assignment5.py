@@ -39,7 +39,7 @@ class SPACE():
 
     #this function can be used to create a display of the utility values for each state in the world
     def setRewardDisplay(self):
-        rewardDisp[self.x][self.y] = str(self.nextUtility).zfill(9)
+        rewardDisp[self.x][self.y] = str(round((self.nextUtility),5)).zfill(9)
 
     #calculate innate rewards
     def getReward(self):
@@ -101,8 +101,7 @@ def Display(step):
             world3DArray[x][y].createDisplay()
     for x in range(8):
         print ' '.join(display[x])
-    print '###################'
-    print
+    print '###################', '\n'
 
 #this function can be used to display the utilities of all states
 def rewardDisplay():
@@ -144,16 +143,19 @@ def transition(state):
                 rightReward = move.utility
     #there is an 80% chance the agent will go the direction it intends
     #and 10% chances it will accidentally go left or right of its intended direction
+    #each final utility is the sum of the probabilities of going each direction multiplied by the utility obtained by actually going that direction
+    #the use of the word "reward" here is a misnomer, as the function is actually computing the utility of each state
     upReward = (.8 * upReward) + (.1 * rightReward) + (.1 * leftReward)
     downReward = (.8 * downReward) + (.1 * rightReward) + (.1 * leftReward)
     rightReward = (.8 * rightReward) + (.1 * upReward) + (.1 * downReward)
     leftReward = (.8 * leftReward) + (.1 * upReward) + (.1 * downReward)
-    rewardList = [upReward,downReward,rightReward,leftReward]
-    return rewardList
+    utilityList = [upReward,downReward,rightReward,leftReward]
+    return utilityList
 
 #this function implements the Bellman equation to compute the next utility of a state
-def calculateUtility(state, rewardList):
-    state.nextUtility = state.reward + (gamma * max(rewardList))
+def calculateUtility(state, utilityList):
+    #the next u
+    state.nextUtility = state.reward + (gamma * max(utilityList))
 
 #value iteration loops through all states and updates their utilities using the Bellman equation (implemented with functions transition() and calculateUtility())
 def ValueIteration():
@@ -169,47 +171,54 @@ def ValueIteration():
         delta = 0
         for list in world3DArray:
             for state in list:
-                rewardList = transition(state) #return list of utilities 
-                calculateUtility(state,rewardList)
-                #uncomment the line below to watch the algorithm progress through the world, updating the utility of each state
+                utilityList = transition(state) #return list of utilities for each direction
+                calculateUtility(state,utilityList)
+                #uncomment the line below to watch the algorithm progress through the world, updating the utility of each state as it goes
                 #rewardDisplay()
+                #only update delta if the computed difference between utilities is greater than the current delta
+                #this ensures that the main loop is always using the largest delta to control convergence
                 if abs(state.nextUtility-state.utility) > delta:
+                    #delta is simply the difference between the state's current utility and the state's next utility
                     delta = abs(state.nextUtility-state.utility)
         convergenceCounter += 1
-        #rewardDisplay()
+        #this is where the loop checks for convergence
+        #it checks to see if the change is less than the threshold (when the change is very small, value iteration has converged)
         if delta < epsilon*((1-gamma)/gamma):
-            print 'Success! Number of MDP iterations to convergence:', convergenceCounter
-            #rewardDisplay()
+            print 'Success! Number of iterations to convergence:', convergenceCounter
             convergence = True
-        #print 'delta:', delta
 
+#this function used to trace the path of maximum utilities created by value iteration
 def performActions(state,step):
-    state.utility = state.nextUtility
+    state.utility = state.nextUtility #update the utility
+    state.visited = True #used for the display
     print 'Utility of state:', state.utility
-    state.visited = True
     possibleMoves = Adjacent(state.x,state.y)
     max = -sys.maxint
     for move in possibleMoves:
         if move != None:
-            if move.value != '2':
-                if move.visited == False:
-                    move.utility = move.nextUtility
-                    if move.utility > max:
+            if move.value != '2': #only consider a move if it is not a wall
+                if move.visited == False: #only evaluate states that have not yet been visited
+                    move.utility = move.nextUtility #update the utilities one last time
+                    if move.utility > max: #update the max utility if the neighboring state's utility is higher
                         max = move.utility
     for move in possibleMoves:
         if move != None:
             if move.value != '2':
-                if move.utility == max:
+                if move.utility == max: #if the neighboring state's utility is the highest, set this state as the next to be travelled to
                     action = move
-    action.visited = True
-    Display(step)
+    Display(step) #print map display
     step += 1
-    if action != end:
-        performActions(action,step)
+    if action != end: #if the path has not yet reached the end, recursively call this function on the next move
+        performActions(action,step) #this can be considered as travelling to the next state
+    else: #if the final state has been reached, cease to recurse
+        action.visited = True
+        print 'Utility of final state:', action.utility
+        Display(step)
+
 
 #main
 file = sys.argv[1] #1st command line arg is the filename
-epsilon = float(sys.argv[2])
+epsilon = float(sys.argv[2]) #2nd command line arg is epsilon
 delta = 0.0
 gamma = 0.9
 world3DArray = [] #all nodes are stored in this array
@@ -225,7 +234,7 @@ for line in worldFile:
         nodeCount = 0
         for char in line:
             if char != '\n' and char != ' ':
-                if goal == False:
+                if goal == False: #since the goal space is actually 2 characters, this check is used to prevent the second '0' from being added to the array
                     #instantiate the SPACE
                     #add the value, row number, and column number of the node to the list of attributes...
                     space = SPACE(char, lineCount, nodeCount)
@@ -242,14 +251,16 @@ end = world3DArray[0][9]
 display = [[0 for x in range(10)] for x in range(8)] #initialize display
 print 'Initial Map:'
 Display(0)
-rewardDisp = [[0 for x in range(10)] for x in range(8)] #initialize reward display
-#initialize rewards for all states
+rewardDisp = [[0 for x in range(10)] for x in range(8)] #initialize utility display (reward is a misnomer)
+#initialize innate rewards for all states
 for line in world3DArray:
     for state in line:
         state.getReward()
-print 'Running value iteration...'
-print
+print 'Running value iteration...', '\n'
+#value iteration does not require parameters because they are defined globally
 ValueIteration()
-print 'Printing the path acquired and the utility of each move...'
-print
+print 'Printing the path acquired and the utility of each move...', '\n'
 performActions(start,0)
+outputChoice = raw_input("Would you like to print all generated utilities? (y/n) ")
+if outputChoice == "y":
+    rewardDisplay()
