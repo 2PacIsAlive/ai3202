@@ -1,4 +1,8 @@
 
+#Jared Jolton
+#CSCI-3202
+#Assignment 5
+#10/7/15
 
 import sys
 import math
