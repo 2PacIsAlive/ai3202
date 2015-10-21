@@ -1,6 +1,6 @@
 import argparse
 
-class GRAPH():
+class Graph():
     def __init__(self):
         #instantiate dictionary
         self.graph = {}
@@ -12,9 +12,8 @@ class GRAPH():
             self.graph.update({value: []})
     def addEdge(self, value1, value2):
         if value1 and value2 in self.graph:
-            #add both nodes to connection lists to ensure unweighted, bidirectional graph
             self.graph[value1].append(value2)
-            self.graph[value2].append(value1)
+            #self.graph[value2].append(value1)
         else:
             print 'One or more vertices not found.'
     def findVertex(self, value):
@@ -29,7 +28,7 @@ class GRAPH():
 def getArgs():
 	parser = argparse.ArgumentParser(description='Specify program behavior.')
 	#parser.add_argument('-g', action="store_true", default=False)
-	parser.add_argument('-g', action="store", dest="conditional_probability")
+	parser.add_argument('-g', action="store", dest="conditional_probability", help="must put argument in quotes!")
 	parser.add_argument('-j', action="store", dest="joint_probability")
 	parser.add_argument('-m', action="store", dest="marginal_probability")
 	parser.add_argument('-p', action="store", dest="set_prior")
@@ -37,6 +36,7 @@ def getArgs():
 	return args
 
 def performAction(arguments):
+	#arguments is the namespace parsed from the command line
 	if arguments.conditional_probability != None:
 		conditionalProbability(arguments.conditional_probability)
 	if arguments.joint_probability != None:
@@ -58,9 +58,23 @@ def marginalProbability(args):
 def setPrior(args):
 	print 'set prior for:', args
 
+def graphSetup(args):
+	g = Graph()
+	g.addVertex("Pollution")
+	g.addVertex("Smoker")
+	g.addVertex("Cancer")
+	g.addVertex("XRay")
+	g.addVertex("BreathingDifficulty")
+	g.addEdge("Pollution","Cancer")
+	g.addEdge("Smoker","Cancer")
+	g.addEdge("Cancer","XRay")
+	g.addEdge("Cancer","BreathingDifficulty")
+	print g.graph
 
 if __name__=="__main__":
-	performAction(getArgs())
+	args = getArgs()
+	performAction(args)
+	graphSetup(args)
 
 	
 
