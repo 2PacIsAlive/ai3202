@@ -22,11 +22,11 @@ When epsilon is decreased, the convergence threshold is raised, and it takes mor
 The utilities produced in this circumstance are <b>more</b> "accurate".</p>
 <p>Here are several examples of this difference:</p>
 <ul type="square">
-    <li>Epsilon = 0.5 (default): Number of steps to convergence = 43</li>
-    <li>Epsilon = 0.1: Number of steps to convergence = 52</li>
-    <li>Epsilon = 0.000001: Number of steps to convergence = 111</li>
-    <li>Epsilon = 0.9: Number of steps to convergence = 41</li>
-    <li>Epsilon = 44: Number of steps to convergence = 17</li>
+    <li>Epsilon = 0.5 (default): Number of iterations to convergence = 43</li>
+    <li>Epsilon = 0.1: Number of iterations to convergence = 52</li>
+    <li>Epsilon = 0.000001: Number of iterations to convergence = 111</li>
+    <li>Epsilon = 0.9: Number of iterations to convergence = 41</li>
+    <li>Epsilon = 44: Number of iterations to convergence = 17</li>
 </ul>
 <p>The path taken by the algorithm does not change unless epsilon is set to 44 or higher.<br>
 Please see the program output for a visualization of these paths and an optional readout of the utilities generated in each case.</p> 
