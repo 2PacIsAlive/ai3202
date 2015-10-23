@@ -1,4 +1,5 @@
 import argparse
+import Queue
 
 class Graph():
     def __init__(self):
@@ -25,6 +26,13 @@ class Graph():
         else: 
             print 'Vertex not found.'
 
+class QueueClass():
+    def __init__(self,size):
+        self.queue = Queue.Queue()
+        self.size = size 
+    def addChar(self,char):  
+        self.queue.put(char)
+
 def getArgs():
 	parser = argparse.ArgumentParser(description='Specify program behavior.')
 	#parser.add_argument('-g', action="store_true", default=False)
@@ -47,16 +55,32 @@ def performAction(arguments):
 		setPrior(arguments.set_prior)
 
 def conditionalProbability(args):
-	print 'do cond prob on:', args
+	print 'Computing conditional probability for:', args
 
 def jointProbability(args):
-	print 'do joint prob on:', args
+	print 'Computing joint probability for:', args
 
 def marginalProbability(args):
-	print 'do marg prob on:', args
+	print 'Computing marginal probability for:', args
 
 def setPrior(args):
-	print 'set prior for:', args
+	print 'Setting prior for:', args
+	priorQueue = QueueClass(len(args))
+	for char in args:
+		priorQueue.addChar(char)
+	first = True
+	dest = ''
+	val = ''
+	while first:
+		current = priorQueue.queue.get()
+		if current != '=':
+			dest += current
+		else:
+			first = False
+	while not priorQueue.queue.empty():
+		val += priorQueue.queue.get()
+	print "dest:",dest," val:",val
+
 
 def graphSetup(args):
 	g = Graph()
@@ -72,6 +96,12 @@ def graphSetup(args):
 	print g.graph
 
 if __name__=="__main__":
+	#set known probabilities
+	pollutionLow = 0.09
+	pollutionHigh = 0.01
+	smokerTrue = 0.30
+	smokerFalse = 0.70
+
 	args = getArgs()
 	performAction(args)
 	graphSetup(args)
