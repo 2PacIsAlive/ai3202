@@ -95,7 +95,7 @@ def graphSetup(args):
 	g.addEdge("Cancer","BreathingDifficulty")
 	print g.graph
 
-if __name__=="__main__":
+def main():
 	#set known probabilities
 	pollutionLow = 0.09
 	pollutionHigh = 0.01
@@ -105,6 +105,9 @@ if __name__=="__main__":
 	args = getArgs()
 	performAction(args)
 	graphSetup(args)
+
+if __name__=="__main__":
+	main()
 
 	
 
