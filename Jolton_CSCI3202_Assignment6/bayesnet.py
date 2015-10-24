@@ -1,30 +1,43 @@
 import argparse
 import Queue
 
-class Graph():
-    def __init__(self):
-        #instantiate dictionary
-        self.graph = {}
-    def addVertex(self, value):
-        if value in self.graph:
-            print 'Vertex already exists.'
-        else:
-            #add the vertex with an empty list to store connections
-            self.graph.update({value: []})
-    def addEdge(self, value1, value2):
-        if value1 and value2 in self.graph:
-            self.graph[value1].append(value2)
-            #self.graph[value2].append(value1)
-        else:
-            print 'One or more vertices not found.'
-    def findVertex(self, value):
-        if value in self.graph:
-            #keys() function used to access all vertices in graph
-            for vertex in self.graph.keys():
-                if vertex == value:
-                    print 'Found vertex:', vertex, 'and shared edge(s) with:', self.graph[vertex]
-        else: 
-            print 'Vertex not found.'
+#set known probabilities
+#POLLUTION
+P = 0.1 #high pollution
+p = 1-P #0.9 #low pollution
+pDist = [P,p]
+
+#SMOKER
+S = 0.70 #smoker false
+s = 1-S #0.30 #smoker true
+sDist = [S,s]
+#CANCER
+cPs = 0.05 #pollution high, smoker true
+cPs_cond = cPs * P * s
+cPS = 0.02 #pollution high, smoker false
+cPS_cond = cPS * P * S
+cps = 0.03 #pollution low, smoker true
+cps_cond = cps * p * s
+cpS = 0.001 #pollution high, smoker false
+cpS_cond = cpS * p * S
+	#cancer distributions
+cDist = [cPs,cPS,cps,cpS]
+cDist_cond = [cPs_cond,cPS_cond,cps_cond,cpS_cond]
+#XRAY
+xCT = 0.90 #cancer true
+xCF = 0.20 #cancer false
+xDist = [xCT,xCF]
+#BREATHING DIFFICULTY
+dCT = 0.65 #cancer true
+dCF = 0.30 #cancer false
+dDist = [dCT,dCF]
+
+
+class Node():
+    def __init__(self,type):
+        self.type = type 
+        self.parents = []
+        self.children = []
 
 class QueueClass():
     def __init__(self,size):
@@ -59,6 +72,23 @@ def conditionalProbability(args):
 
 def jointProbability(args):
 	print 'Computing joint probability for:', args
+	jP = 0
+	tilde = False
+	for char in args:
+		if char == '~':
+			tilde = True
+		else:
+			if tilde == True:
+				print "getting",char,"false"
+				tilde = False
+			else: 
+				print "getting",char,"true"
+				if char == 'c':
+					for item in cDist_cond:
+						print "item in cDist_cond", item
+						jP += item
+						print jP
+	print 'Joint Probability:',jP
 
 def marginalProbability(args):
 	print 'Computing marginal probability for:', args
@@ -79,32 +109,26 @@ def setPrior(args):
 			first = False
 	while not priorQueue.queue.empty():
 		val += priorQueue.queue.get()
-	print "dest:",dest," val:",val
+	val = float(val) 
+	if dest == 'P':
+		P = val
+		p = 1-P
+		print 'Set p to',p,'and P to',P
+	elif dest == 'S':
+		S = val
+		s = 1-S
+		print 'Set s to',s,'and S to',S
+	else:
+		print 'Invalid input. Set either "P" or "S".'
 
 
-def graphSetup(args):
-	g = Graph()
-	g.addVertex("Pollution")
-	g.addVertex("Smoker")
-	g.addVertex("Cancer")
-	g.addVertex("XRay")
-	g.addVertex("BreathingDifficulty")
-	g.addEdge("Pollution","Cancer")
-	g.addEdge("Smoker","Cancer")
-	g.addEdge("Cancer","XRay")
-	g.addEdge("Cancer","BreathingDifficulty")
-	print g.graph
 
 def main():
-	#set known probabilities
-	pollutionLow = 0.09
-	pollutionHigh = 0.01
-	smokerTrue = 0.30
-	smokerFalse = 0.70
+	
 
 	args = getArgs()
 	performAction(args)
-	graphSetup(args)
+	#make sure to update nodes after setting priors
 
 if __name__=="__main__":
 	main()
