@@ -34,8 +34,6 @@ class Node():
     		self.CPT["cancerTrue"] = 0.65
     		self.CPT["cancerFalse"] = 0.30
 
-
-
 class QueueClass():
     def __init__(self,size):
         self.queue = Queue.Queue()
@@ -84,7 +82,7 @@ def jointProbability(args):
 				tilde = False
 			else: 
 				parseMe.append((char,"true"))
-	jp = calcJoint(parseMe)
+	jP = calcJoint(parseMe)
 	print 'Joint Probability:',jP
 
 def getParentState(args):
@@ -118,23 +116,65 @@ def getParentState(args):
 	return CPT_entries
 
 def calcJoint(args):
-	total = 0
+	total = 1
 	for item in args:
 		if item == ("p","false"):
-			total *= pollution.CPT[pollutionHigh]
+			total *= bayesnet[0].CPT["pollutionHigh"]
 		elif item == ("p","true"):
-			total *= pollution.CPT[pollutionLow]
+			total *= bayesnet[0].CPT["pollutionLow"]
+
 		elif item == ("s","false"):
-			total *= smoker.CPT[smokerFalse]
+			total *= bayesnet[1].CPT["smokerFalse"]
 		elif item == ("s","true"):
-			total *= smoker.CPT[smokerTrue]
+			total *= bayesnet[1].CPT["smokerTrue"]
+
 		elif item == ("c","true"):
 			lookup = getParentState(args)
-			for state in lookup:
-				total *= cancer[state]
-		elif item == ("c")
-		#need to implement conditional probability first?
+			if "pollutionHigh_smokerTrue" in lookup:
+				total *= bayesnet[2].CPT["pollutionHigh_smokerTrue"]
+			elif "pollutionHigh_smokerFalse" in lookup:
+				total *= bayesnet[2].CPT["pollutionHigh_smokerFalse"]
+			elif "pollutionLow_smokerTrue" in lookup:
+				total *= bayesnet[2].CPT["pollutionLow_smokerTrue"]
+			elif "pollutionLow_smokerFalse" in lookup:
+				total *= bayesnet[2].CPT["pollutionLow_smokerFalse"]
+		elif item == ("c","false"):
+			lookup = getParentState(args)
+			if "pollutionHigh_smokerTrue" in lookup:
+				total *= 1-bayesnet[2].CPT["pollutionHigh_smokerTrue"]
+			elif "pollutionHigh_smokerFalse" in lookup:
+				total *= 1-bayesnet[2].CPT["pollutionHigh_smokerFalse"]
+			elif "pollutionLow_smokerTrue" in lookup:
+				total *= 1-bayesnet[2].CPT["pollutionLow_smokerTrue"]
+			elif "pollutionLow_smokerFalse" in lookup:
+				total *= 1-bayesnet[2].CPT["pollutionLow_smokerFalse"]
 
+		elif item == ("x","true"):
+			lookup = getParentState(args)
+			if "cancerTrue" in lookup:
+				total *= bayesnet[3].CPT["cancerTrue"]
+			elif "cancerFalse" in lookup:
+				total *= bayesnet[3].CPT["cancerFalse"]
+		elif item == ("x","false"):
+			lookup = getParentState(args)
+			if "cancerTrue" in lookup:
+				total *= 1-bayesnet[3].CPT["cancerTrue"]
+			elif "cancerFalse" in lookup:
+				total *= 1-bayesnet[3].CPT["cancerFalse"]
+
+		elif item == ("d","true"):
+			lookup = getParentState(args)
+			if "cancerTrue" in lookup:
+				total *= bayesnet[4].CPT["cancerTrue"]
+			elif "cancerFalse" in lookup:
+				total *= bayesnet[4].CPT["cancerFalse"]
+		elif item == ("d","false"):
+			lookup = getParentState(args)
+			if "cancerTrue" in lookup:
+				total *= 1-bayesnet[4].CPT["cancerTrue"]
+			elif "cancerFalse" in lookup:
+				total *= 1-bayesnet[4].CPT["cancerFalse"]
+	return total
 
 def marginalProbability(args):
 	print 'Computing marginal probability for:', args
@@ -166,8 +206,8 @@ def setPrior(args):
 		print 'Set s to',s,'and S to',S
 	else:
 		print 'Invalid input. Set either "P" or "S".'
-
-def genNodes(): #pearl's network construction algorithm
+'''
+def genNet(): #pearl's network construction algorithm
 	#instantiate nodes
 	pollution = Node("pollution")
 	smoking = Node("smoking")
@@ -183,22 +223,20 @@ def genNodes(): #pearl's network construction algorithm
 	dys.parents = [cancer]
 	#list of nodes in network
 	bayesnet = [pollution,smoking,cancer,xray,dys]
+	print bayesnet
 	#setup conditional probability tables
 	for node in bayesnet:
 		node.createCPT()
-		print "node: ",node.type
-		print "CPT: "
-		print node.CPT
-
+'''
 def main():
-	genNodes()
+	#genNet()
 	args = getArgs()
 	performAction(args)
 	#make sure to update nodes after setting priors
 
 if __name__=="__main__":
 	#global network
-	bayesnet = []
+	#bayesnet = []
 	#set known probabilities
 	#POLLUTION
 	P = 0.1 #high pollution
@@ -228,6 +266,29 @@ if __name__=="__main__":
 	dCT = 0.65 #cancer true
 	dCF = 0.30 #cancer false
 	dDist = [dCT,dCF]
+
+
+
+	bayesnet = []
+	pollution = Node("pollution")
+	smoking = Node("smoking")
+	cancer = Node("cancer")
+	xray = Node("xray")
+	dys = Node("dys")
+	#specify network connections
+	pollution.children = [cancer]
+	smoking.children = [cancer]
+	cancer.parents = [pollution,smoking]
+	cancer.children = [xray,dys]
+	xray.parents = [cancer]
+	dys.parents = [cancer]
+	#list of nodes in network
+	bayesnet = [pollution,smoking,cancer,xray,dys]
+	#setup conditional probability tables
+	for node in bayesnet:
+		node.createCPT()
+
+
 	#call main
 	main()
 
