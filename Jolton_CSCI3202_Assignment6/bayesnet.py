@@ -1,43 +1,23 @@
 import argparse
 import Queue
 
-#set known probabilities
-#POLLUTION
-P = 0.1 #high pollution
-p = 1-P #0.9 #low pollution
-pDist = [P,p]
-
-#SMOKER
-S = 0.70 #smoker false
-s = 1-S #0.30 #smoker true
-sDist = [S,s]
-#CANCER
-cPs = 0.05 #pollution high, smoker true
-cPs_cond = cPs * P * s
-cPS = 0.02 #pollution high, smoker false
-cPS_cond = cPS * P * S
-cps = 0.03 #pollution low, smoker true
-cps_cond = cps * p * s
-cpS = 0.001 #pollution high, smoker false
-cpS_cond = cpS * p * S
-	#cancer distributions
-cDist = [cPs,cPS,cps,cpS]
-cDist_cond = [cPs_cond,cPS_cond,cps_cond,cpS_cond]
-#XRAY
-xCT = 0.90 #cancer true
-xCF = 0.20 #cancer false
-xDist = [xCT,xCF]
-#BREATHING DIFFICULTY
-dCT = 0.65 #cancer true
-dCF = 0.30 #cancer false
-dDist = [dCT,dCF]
-
-
 class Node():
     def __init__(self,type):
         self.type = type 
         self.parents = []
         self.children = []
+        self.CPT = {}
+    def createCPT(self):
+    	keys = ["pollutionLow", "pollutionHigh", 
+    			"smokerTrue", "smokerFalse", 
+    			"cancerTrue", "cancerFalse", 
+    			"xrayTrue", "xrayFalse", 
+    			"dysTrue", "dysFalse"]
+    	self.CPT = dict.fromkeys(keys, [])
+    	#specify CPT values
+    	if node.type == pollution:
+    		
+
 
 class QueueClass():
     def __init__(self,size):
@@ -49,7 +29,7 @@ class QueueClass():
 def getArgs():
 	parser = argparse.ArgumentParser(description='Specify program behavior.')
 	#parser.add_argument('-g', action="store_true", default=False)
-	parser.add_argument('-g', action="store", dest="conditional_probability", help="must put argument in quotes!")
+	parser.add_argument('-g', action="store", dest="conditional_probability", help="must put bar in quotes!")
 	parser.add_argument('-j', action="store", dest="joint_probability")
 	parser.add_argument('-m', action="store", dest="marginal_probability")
 	parser.add_argument('-p', action="store", dest="set_prior")
@@ -72,7 +52,10 @@ def conditionalProbability(args):
 
 def jointProbability(args):
 	print 'Computing joint probability for:', args
-	jP = 0
+	#product over i of (p(xi | Parents(xi)))
+	#must assume that parents are in a certain state?
+	jP = 1 
+	prob = None
 	tilde = False
 	for char in args:
 		if char == '~':
@@ -80,6 +63,8 @@ def jointProbability(args):
 		else:
 			if tilde == True:
 				print "getting",char,"false"
+				#compute probability of char given chars parents
+				jp *= 1
 				tilde = False
 			else: 
 				print "getting",char,"true"
@@ -121,16 +106,66 @@ def setPrior(args):
 	else:
 		print 'Invalid input. Set either "P" or "S".'
 
-
+def genNodes():
+	#instantiate nodes
+	pollution = Node("pollution")
+	smoking = Node("smoking")
+	cancer = Node("cancer")
+	xray = Node("xray")
+	dys = Node("dys")
+	#specify network connections
+	pollution.children = [cancer]
+	smoking.children = [cancer]
+	cancer.parents = [pollution,smoking]
+	cancer.children = [xray,dys]
+	xray.parents = [cancer]
+	dys.parents = [cancer]
+	#list of nodes in network
+	bayesnet = [pollution,smoking,cancer,xray,dys]
+	#setup conditional probability tables
+	for node in bayesnet:
+		node.createCPT()
+		print node.CPT
 
 def main():
-	
-
+	genNodes()
 	args = getArgs()
 	performAction(args)
 	#make sure to update nodes after setting priors
 
 if __name__=="__main__":
+	#global network
+	bayesnet = []
+	#set known probabilities
+	#POLLUTION
+	P = 0.1 #high pollution
+	p = 1-P #0.9 #low pollution
+	pDist = [P,p]
+	#SMOKER
+	S = 0.70 #smoker false
+	s = 1-S #0.30 #smoker true
+	sDist = [S,s]
+	#CANCER
+	cPs = 0.05 #pollution high, smoker true
+	cPs_cond = cPs * P * s
+	cPS = 0.02 #pollution high, smoker false
+	cPS_cond = cPS * P * S
+	cps = 0.03 #pollution low, smoker true
+	cps_cond = cps * p * s
+	cpS = 0.001 #pollution high, smoker false
+	cpS_cond = cpS * p * S
+		#cancer distributions
+	cDist = [cPs,cPS,cps,cpS]
+	cDist_cond = [cPs_cond,cPS_cond,cps_cond,cpS_cond]
+	#XRAY
+	xCT = 0.90 #cancer true
+	xCF = 0.20 #cancer false
+	xDist = [xCT,xCF]
+	#BREATHING DIFFICULTY
+	dCT = 0.65 #cancer true
+	dCF = 0.30 #cancer false
+	dDist = [dCT,dCF]
+	#call main
 	main()
 
 	
