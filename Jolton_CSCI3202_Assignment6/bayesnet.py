@@ -8,15 +8,32 @@ class Node():
         self.children = []
         self.CPT = {}
     def createCPT(self):
-    	keys = ["pollutionLow", "pollutionHigh", 
-    			"smokerTrue", "smokerFalse", 
-    			"cancerTrue", "cancerFalse", 
-    			"xrayTrue", "xrayFalse", 
-    			"dysTrue", "dysFalse"]
-    	self.CPT = dict.fromkeys(keys, [])
-    	#specify CPT values
-    	if node.type == pollution:
-    		
+    	keys = ["pollutionLow_smokerTrue", "pollutionLow_smokerFalse", 
+    		"pollutionHigh_smokerTrue", "pollutionHigh_smokerFalse", 
+    		"cancerTrue", "cancerFalse", 
+    		"xrayTrue", "xrayFalse", 
+    		"dysTrue", "dysFalse"]
+    	self.CPT = dict.fromkeys(keys, None)
+    	#generate CPT values
+    	#must specify all possible combinations of parent states 
+    	if self.type == "pollution":
+    		self.CPT["pollutionHigh"] = P
+    		self.CPT["pollutionLow"] = p
+    	elif self.type == "smoker":
+    		self.CPT["smokerTrue"] = s
+    		self.CPT["smokerFalse"] = S
+    	elif self.type == "cancer":
+    		self.CPT["pollutionLow_smokerTrue"] = 0.03
+    		self.CPT["pollutionHigh_smokerTrue"] = 0.05
+    		self.CPT["pollutionLow_smokerFalse"] = 0.001
+    		self.CPT["pollutionHigh_smokerFalse"] = 0.02
+    	elif self.type == "xray":
+    		self.CPT["cancerTrue"] = 0.90
+    		self.CPT["cancerFalse"] = 0.20
+    	elif self.type == "dys":
+    		self.CPT["cancerTrue"] = 0.65
+    		self.CPT["cancerFalse"] = 0.30
+
 
 
 class QueueClass():
@@ -54,26 +71,70 @@ def jointProbability(args):
 	print 'Computing joint probability for:', args
 	#product over i of (p(xi | Parents(xi)))
 	#must assume that parents are in a certain state?
-	jP = 1 
-	prob = None
+	jP = -1.0 
 	tilde = False
+	parseMe = []
 	for char in args:
 		if char == '~':
 			tilde = True
 		else:
 			if tilde == True:
-				print "getting",char,"false"
+				parseMe.append((char,"false"))
 				#compute probability of char given chars parents
-				jp *= 1
 				tilde = False
 			else: 
-				print "getting",char,"true"
-				if char == 'c':
-					for item in cDist_cond:
-						print "item in cDist_cond", item
-						jP += item
-						print jP
+				parseMe.append((char,"true"))
+	jp = calcJoint(parseMe)
 	print 'Joint Probability:',jP
+
+def getParentState(args):
+	combinations = []
+	CPT_entries = []
+	for item in args:
+		if item == ("p","false"):
+			combinations.append("pollutionHigh")
+		elif item == ("p","true"):
+			combinations.append("pollutionLow")
+		elif item == ("s","false"):
+			combinations.append("smokerFalse")
+		elif item == ("s","true"):
+			combinations.append("smokerTrue")
+		elif item == ("c","true"):
+			combinations.append("cancerTrue")
+		elif item == ("c","false"):
+			combinations.append("cancerFalse")
+	if "pollutionHigh" in combinations and "smokerTrue" in combinations:
+		CPT_entries.append("pollutionHigh_smokerTrue")
+	elif "pollutionHigh" in combinations and "smokerFalse" in combinations:
+		CPT_entries.append("pollutionHigh_smokerFalse")
+	elif "pollutionLow" in combinations and "smokerTrue" in combinations:
+		CPT_entries.append("pollutionLow_smokerTrue")
+	elif "pollutionLow" in combinations and "smokerFalse" in combinations:
+		CPT_entries.append("pollutionLow_smokerFalse")
+	elif "cancerTrue" in combinations:
+		CPT_entries.append("cancerTrue")
+	elif "cancerFalse" in combinations:
+		CPT_entries.append("cancerFalse")
+	return CPT_entries
+
+def calcJoint(args):
+	total = 0
+	for item in args:
+		if item == ("p","false"):
+			total *= pollution.CPT[pollutionHigh]
+		elif item == ("p","true"):
+			total *= pollution.CPT[pollutionLow]
+		elif item == ("s","false"):
+			total *= smoker.CPT[smokerFalse]
+		elif item == ("s","true"):
+			total *= smoker.CPT[smokerTrue]
+		elif item == ("c","true"):
+			lookup = getParentState(args)
+			for state in lookup:
+				total *= cancer[state]
+		elif item == ("c")
+		#need to implement conditional probability first?
+
 
 def marginalProbability(args):
 	print 'Computing marginal probability for:', args
@@ -106,7 +167,7 @@ def setPrior(args):
 	else:
 		print 'Invalid input. Set either "P" or "S".'
 
-def genNodes():
+def genNodes(): #pearl's network construction algorithm
 	#instantiate nodes
 	pollution = Node("pollution")
 	smoking = Node("smoking")
@@ -125,6 +186,8 @@ def genNodes():
 	#setup conditional probability tables
 	for node in bayesnet:
 		node.createCPT()
+		print "node: ",node.type
+		print "CPT: "
 		print node.CPT
 
 def main():
