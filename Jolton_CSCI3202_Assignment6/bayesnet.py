@@ -8,7 +8,9 @@ class Node():
         self.children = []
         self.CPT = {}
     def createCPT(self):
-    	keys = ["pollutionLow_smokerTrue", "pollutionLow_smokerFalse", 
+    	keys = ["pollutionHigh", "pollutionLow",
+    		"smokerTrue", "smokerFalse"
+    		"pollutionLow_smokerTrue", "pollutionLow_smokerFalse", 
     		"pollutionHigh_smokerTrue", "pollutionHigh_smokerFalse", 
     		"cancerTrue", "cancerFalse", 
     		"xrayTrue", "xrayFalse", 
@@ -53,14 +55,32 @@ def getArgs():
 
 def performAction(arguments):
 	#arguments is the namespace parsed from the command line
+	if arguments.set_prior != None:
+		setPrior(arguments.set_prior)
 	if arguments.conditional_probability != None:
 		conditionalProbability(arguments.conditional_probability)
 	if arguments.joint_probability != None:
 		jointProbability(arguments.joint_probability)
 	if arguments.marginal_probability != None:
 		marginalProbability(arguments.marginal_probability)
-	if arguments.set_prior != None:
-		setPrior(arguments.set_prior)
+
+def parseArguments(args):
+	tilde = False
+	parseMe = []
+	for char in args:
+		if char.isupper():
+			parseMe.append((char,"distribution"))
+		else:
+			if char == '~':
+				tilde = True
+			else:
+				if tilde == True:
+					parseMe.append((char,"false"))
+					#compute probability of char given chars parents
+					tilde = False
+				else: 
+					parseMe.append((char,"true"))
+	return parseMe
 
 def conditionalProbability(args):
 	print 'Computing conditional probability for:', args
@@ -69,19 +89,8 @@ def jointProbability(args):
 	print 'Computing joint probability for:', args
 	#product over i of (p(xi | Parents(xi)))
 	#must assume that parents are in a certain state?
-	jP = -1.0 
-	tilde = False
-	parseMe = []
-	for char in args:
-		if char == '~':
-			tilde = True
-		else:
-			if tilde == True:
-				parseMe.append((char,"false"))
-				#compute probability of char given chars parents
-				tilde = False
-			else: 
-				parseMe.append((char,"true"))
+	jP = -1.0 #return -1 if something goes wrong in calcJoint()
+	parseMe = parseArguments(args)
 	jP = calcJoint(parseMe)
 	print 'Joint Probability:',jP
 
@@ -100,22 +109,23 @@ def getParentState(args):
 		elif item == ("c","true"):
 			combinations.append("cancerTrue")
 		elif item == ("c","false"):
-			combinations.append("cancerFalse")
+			combinations.append("cancerFalse")		
 	if "pollutionHigh" in combinations and "smokerTrue" in combinations:
 		CPT_entries.append("pollutionHigh_smokerTrue")
-	elif "pollutionHigh" in combinations and "smokerFalse" in combinations:
+	if "pollutionHigh" in combinations and "smokerFalse" in combinations:
 		CPT_entries.append("pollutionHigh_smokerFalse")
-	elif "pollutionLow" in combinations and "smokerTrue" in combinations:
+	if "pollutionLow" in combinations and "smokerTrue" in combinations:
 		CPT_entries.append("pollutionLow_smokerTrue")
-	elif "pollutionLow" in combinations and "smokerFalse" in combinations:
+	if "pollutionLow" in combinations and "smokerFalse" in combinations:
 		CPT_entries.append("pollutionLow_smokerFalse")
-	elif "cancerTrue" in combinations:
+	if "cancerTrue" in combinations:
 		CPT_entries.append("cancerTrue")
-	elif "cancerFalse" in combinations:
+	if "cancerFalse" in combinations:
 		CPT_entries.append("cancerFalse")
 	return CPT_entries
 
 def calcJoint(args):
+	lookup = getParentState(args)
 	total = 1
 	for item in args:
 		if item == ("p","false"):
@@ -129,7 +139,6 @@ def calcJoint(args):
 			total *= bayesnet[1].CPT["smokerTrue"]
 
 		elif item == ("c","true"):
-			lookup = getParentState(args)
 			if "pollutionHigh_smokerTrue" in lookup:
 				total *= bayesnet[2].CPT["pollutionHigh_smokerTrue"]
 			elif "pollutionHigh_smokerFalse" in lookup:
@@ -139,7 +148,6 @@ def calcJoint(args):
 			elif "pollutionLow_smokerFalse" in lookup:
 				total *= bayesnet[2].CPT["pollutionLow_smokerFalse"]
 		elif item == ("c","false"):
-			lookup = getParentState(args)
 			if "pollutionHigh_smokerTrue" in lookup:
 				total *= 1-bayesnet[2].CPT["pollutionHigh_smokerTrue"]
 			elif "pollutionHigh_smokerFalse" in lookup:
@@ -150,26 +158,22 @@ def calcJoint(args):
 				total *= 1-bayesnet[2].CPT["pollutionLow_smokerFalse"]
 
 		elif item == ("x","true"):
-			lookup = getParentState(args)
 			if "cancerTrue" in lookup:
 				total *= bayesnet[3].CPT["cancerTrue"]
 			elif "cancerFalse" in lookup:
 				total *= bayesnet[3].CPT["cancerFalse"]
 		elif item == ("x","false"):
-			lookup = getParentState(args)
 			if "cancerTrue" in lookup:
 				total *= 1-bayesnet[3].CPT["cancerTrue"]
 			elif "cancerFalse" in lookup:
 				total *= 1-bayesnet[3].CPT["cancerFalse"]
 
 		elif item == ("d","true"):
-			lookup = getParentState(args)
 			if "cancerTrue" in lookup:
 				total *= bayesnet[4].CPT["cancerTrue"]
 			elif "cancerFalse" in lookup:
 				total *= bayesnet[4].CPT["cancerFalse"]
 		elif item == ("d","false"):
-			lookup = getParentState(args)
 			if "cancerTrue" in lookup:
 				total *= 1-bayesnet[4].CPT["cancerTrue"]
 			elif "cancerFalse" in lookup:
@@ -178,6 +182,40 @@ def calcJoint(args):
 
 def marginalProbability(args):
 	print 'Computing marginal probability for:', args
+	#sum out unwanted variables
+	parseMe = parseArguments(args)
+	mP = calcMarg(parseMe)
+	print "Marginal Probability:",mP
+
+def calcMarg(args):
+	total = 0
+	for item in args:
+		if item == ("C","distribution"):
+			print "Marginal probability distribution of cancer:"
+			print "True:",calcMarg([("c","true")]),"False:",calcMarg([("c","false")])
+
+		elif item == ("c","true"):
+			total += bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerTrue"]
+			total += bayesnet[2].CPT["pollutionHigh_smokerFalse"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerFalse"]
+			total += bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerTrue"]
+			total += bayesnet[2].CPT["pollutionLow_smokerFalse"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerFalse"]
+		elif item == ("c","false"):
+			total = 1-calcMarg([("c","true")])
+		
+		elif item == ("x","true"):
+			total += bayesnet[3].CPT["cancerTrue"] 
+			total += bayesnet[3].CPT["cancerFalse"]
+		elif item == ("x","false"):
+			total += 1-bayesnet[3].CPT["cancerTrue"]
+			total += 1-bayesnet[3].CPT["cancerFalse"]
+			
+		elif item == ("d","true"):
+			total += bayesnet[4].CPT["cancerTrue"]
+			total += bayesnet[4].CPT["cancerFalse"]
+		elif item == ("d","false"):
+			total += 1-bayesnet[4].CPT["cancerTrue"]
+			total += 1-bayesnet[4].CPT["cancerFalse"]
+	return total
 
 def setPrior(args):
 	print 'Setting prior for:', args
@@ -197,10 +235,16 @@ def setPrior(args):
 		val += priorQueue.queue.get()
 	val = float(val) 
 	if dest == 'P':
+		for node in bayesnet:
+			node.CPT["pollutionHigh"] = val
+			node.CPT["pollutionLow"] = 1-val
 		P = val
 		p = 1-P
 		print 'Set p to',p,'and P to',P
 	elif dest == 'S':
+		for node in bayesnet:
+			node.CPT["smokerFalse"] = val
+			node.CPT["smokerTrue"] = 1-val
 		S = val
 		s = 1-S
 		print 'Set s to',s,'and S to',S
@@ -235,8 +279,6 @@ def main():
 	#make sure to update nodes after setting priors
 
 if __name__=="__main__":
-	#global network
-	#bayesnet = []
 	#set known probabilities
 	#POLLUTION
 	P = 0.1 #high pollution
@@ -267,27 +309,24 @@ if __name__=="__main__":
 	dCF = 0.30 #cancer false
 	dDist = [dCT,dCF]
 
-
-
 	bayesnet = []
 	pollution = Node("pollution")
-	smoking = Node("smoking")
+	smoker = Node("smoker")
 	cancer = Node("cancer")
 	xray = Node("xray")
 	dys = Node("dys")
 	#specify network connections
 	pollution.children = [cancer]
-	smoking.children = [cancer]
-	cancer.parents = [pollution,smoking]
+	smoker.children = [cancer]
+	cancer.parents = [pollution,smoker]
 	cancer.children = [xray,dys]
 	xray.parents = [cancer]
 	dys.parents = [cancer]
 	#list of nodes in network
-	bayesnet = [pollution,smoking,cancer,xray,dys]
+	bayesnet = [pollution,smoker,cancer,xray,dys]
 	#setup conditional probability tables
 	for node in bayesnet:
 		node.createCPT()
-
 
 	#call main
 	main()
