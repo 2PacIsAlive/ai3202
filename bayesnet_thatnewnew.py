@@ -1,13 +1,5 @@
-#Jared Jolton
-#CSCI 3202 Intro to AI
-#Assignment 6
-#Bayes Net
-
 import argparse
 import Queue
-import ipdb
-breakP = ipdb.set_trace
-#breakP()
 
 class Node():
     def __init__(self,type):
@@ -128,63 +120,19 @@ def getReasoningType(case):
 		reasoningType = "diagnostic"
 	elif case == [("s","true")]:
 		reasoningType = "predictive"
-	elif case == [("c","true")] or case == [("c","true"),("s","true")] or case == [("s","true"),("c","true")]:
+	elif case == [("c","true")] or case == [("c","true"),("s","true")]:
 		reasoningType = "intercausal"
-	elif case == [("d","true"),("t","true")] or [("t","true"),("d","true")]:
+	elif case == [("d","true"),("t","true")]:
 		reasoningType = "intercausal"
 	return reasoningType
 
 def conditionalProbability(args):
-	cP = 0
 	a,b = parseConditionalArguments(args)
 	reasoningType = getReasoningType(b)
 	if reasoningType == None:
 		print "Invalid conditional probability input."
 	else:
 		print 'Computing conditional probability for:',args,"using",reasoningType,"reasoning."
-	for arg in a:
-		for arg2 in b:
-			if arg == arg2:
-				cP = 1
-				reasoningType = None #skip other calculations if reasoning with a known belief
-	if reasoningType == "predictive":
-		if a == [("p","false")]:
-			cP = bayesnet[0].CPT["pollutionHigh"]
-		elif a == [("x","true")]:
-			cP = calcMarg([("x","smokerTrue")])
-			#p(x=pos | smoker) = p(x,s,c,p) / p(s,c,p)
-		elif a == [("d","true")]:
-			cP = calcMarg([("d","smokerTrue")])
-		elif a == [("c","true")]:
-			cP = calcMarg([("c","smokerTrue")])
-	elif reasoningType == "diagnostic":
-		if a == [("c","true")]:
-			#cancer given dyspnoea
-			cP = (bayesnet[4].CPT["cancerTrue"] * calcMarg([("c","true")])) / calcMarg([("d","true")])
-	elif reasoningType == "intercausal":
-		if ("s","true") not in b:
-			if a == [("p","false")]:
-			#pollution high given cancer
-			#bayes rule <3
-				cP = (calcMarg([("c","pollutionHigh")]) * bayesnet[0].CPT["pollutionHigh"]) / calcMarg([("c","true")])
-			elif a == [("s","true")]:
-			#smoker given cancer
-			#bayes rule <3
-				cP = (calcMarg([("c","smokerTrue")]) * bayesnet[1].CPT["smokerTrue"]) / calcMarg([("c","true")])
-			elif a == [("x","true")]:
-				cP = bayesnet[3].CPT["cancerTrue"]
-			elif a == [("d","true")]:
-				cP = bayesnet[4].CPT["cancerTrue"]
-		else:
-			if a == [("p","false")]:
-				#p(c|~p,s) * p(~p) / p(c|s)
-				cP = (bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]) / calcMarg([("c","smokerTrue")])
-			elif a == [("x","true")]: 
-				cP = bayesnet[3].CPT["cancerTrue"]
-			elif a == [("d","true")]:
-				cP = bayesnet[4].CPT["cancerTrue"]
-
-	print "Conditional Probability:",cP
 
 def jointProbability(args):
 	print 'Computing joint probability for:', args
@@ -201,16 +149,12 @@ def getParentState(args):
 	for item in args:
 		if item == ("p","false"):
 			combinations.append("pollutionHigh")
-			CPT_entries.append("pollutionHigh")
 		elif item == ("p","true"):
 			combinations.append("pollutionLow")
-			CPT_entries.append("pollutionLow")
 		elif item == ("s","false"):
 			combinations.append("smokerFalse")
-			CPT_entries.append("smokerFalse")
 		elif item == ("s","true"):
 			combinations.append("smokerTrue")
-			CPT_entries.append("smokerTrue")
 		elif item == ("c","true"):
 			combinations.append("cancerTrue")
 		elif item == ("c","false"):
@@ -239,32 +183,67 @@ def getMissingParents(args):
 		missing.append("cancer")
 	return missing
 
+#def jointHelper(parentList,childList):
+	#PARENT
+	#pollution | smoking | cancer
+	#pollution | smoking
+	#pollution | cancer
+	#pollution
+	#smoking | cancer
+	#smoking
+	#cancer
+	#none
+	###################
+	#CHILD
+	#d true | x false | cancer true 
+	#d true | x false | cancer false
+	#d true | x true | cancer true 
+	#d true | x true | cancer false
+	#d false | x false | cancer true 
+	#d false | x false | cancer false
+	#d false | x true | cancer true 
+	#d false | x true | cancer false
+	#d true | x true
+	#d true | x false
+	#d true | cancer true
+	#d true | cancer false
+	#x true | cancer true
+	#x true | cancer false
+	#d false | x true
+	#d false | x false
+	#d false | cancer true
+	#d false | cancer false
+	#x false | cancer true
+	#x false | cancer false
+	#d true
+	#d false
+	#x true
+	#x false
+	#cancer true
+	#cancer false
+	#none
+
+	#if argument has d or x, 
+		#
+	#for every child node 
+		#see what parents are missing 
+		#probability of child given the parents 	
+
+
 def calcJoint(args):
 	lookup = getParentState(args)
 	ommissions = getMissingParents(args)
 	total = 1
 	for item in args:
 		if item == ("p","false"):
-			if "smoker" not in ommissions:
-				total *= bayesnet[0].CPT["pollutionHigh"]
-			if "smoker" in ommissions and "cancer" in ommissions:
-				total *= bayesnet[0].CPT["pollutionHigh"] * 0.1
+			total *= bayesnet[0].CPT["pollutionHigh"]
 		elif item == ("p","true"):
-			if "smoker" not in ommissions:
-				total *= bayesnet[0].CPT["pollutionLow"]
-			if "smoker" in ommissions and "cancer" in ommissions:
-				total *= bayesnet[0].CPT["pollutionLow"] * 0.1
+			total *= bayesnet[0].CPT["pollutionLow"]
 
-		if item == ("s","false"):
-			if "pollution" not in ommissions:
-				total *= bayesnet[1].CPT["smokerFalse"]
-			if "pollution" in ommissions and "cancer" in ommissions:
-				total *= bayesnet[1].CPT["smokerFalse"] * 0.1
+		elif item == ("s","false"):
+			total *= bayesnet[1].CPT["smokerFalse"]
 		elif item == ("s","true"):
-			if "pollution" not in ommissions:
-				total *= bayesnet[1].CPT["smokerTrue"]
-			if "pollution" in ommissions and "cancer" in ommissions:
-				total *= bayesnet[1].CPT["smokerTrue"] * 0.1
+			total *= bayesnet[1].CPT["smokerTrue"]
 
 		elif item == ("c","true"):
 			if "pollutionHigh_smokerTrue" in lookup:
@@ -275,20 +254,23 @@ def calcJoint(args):
 				total *= bayesnet[2].CPT["pollutionLow_smokerTrue"]
 			elif "pollutionLow_smokerFalse" in lookup:
 				total *= bayesnet[2].CPT["pollutionLow_smokerFalse"]
-			else: 
+			'''
+			##########################################################################################
+			else: #unspecified parent state
 				if "pollution" in ommissions and "smoker" in ommissions:
-					total *= calcMarg([("c","true")])
-				elif "pollution" in ommissions:
-					if ("smokerTrue") in lookup:
-						total *= calcMarg([("c","smokerTrue")])
-					if ("s","false") in lookup:
-						total *= calcMarg([("c","smokerFalse")])
-				elif "smoker" in ommissions:
-					if ("pollutionLow") in lookup:
-						total *= calcMarg([("c","pollutionLow")])
-					if ("pollutionHigh") in lookup:
-						total *= calcMarg([("c","pollutionHigh")])
-
+					getCPTentries = ["pHsT_parents",
+									"pHsF_parents",
+									"pLsT_parents",
+									"pLsF_parents"]
+					if ("x","true") in lookup and ("d","true") in lookup:
+						for entry in getCPTentries:
+							total *= bayesnet[2].CPT[entry] * bayesnet[3].CPT["xrayTrue"] * bayesnet[4].CPT["dysTrue"]
+					if ("x","false") in lookup and ("d","true") in lookup:
+						for entry in getCPTentries:
+							total *= bayesnet[2].CPT[entry] * bayesnet[3].CPT["xrayTrue"] * bayesnet[4].CPT["dysTrue"]
+			'''
+			else: 
+				total *= calcMarg([("c","true")])
 		elif item == ("c","false"):
 			if "pollutionHigh_smokerTrue" in lookup:
 				total *= 1-bayesnet[2].CPT["pollutionHigh_smokerTrue"]
@@ -299,18 +281,7 @@ def calcJoint(args):
 			elif "pollutionLow_smokerFalse" in lookup:
 				total *= 1-bayesnet[2].CPT["pollutionLow_smokerFalse"]
 			else: 
-				if "pollution" in ommissions and "smoker" in ommissions:
-					total *= calcMarg([("c","false")])
-				elif "pollution" in ommissions:
-					if ("smokerTrue") in lookup:
-						total *= calcMarg([("~c","smokerTrue")])
-					if ("smokerFalse") in lookup:
-						total *= calcMarg([("~c","smokerFalse")])
-				elif "smoker" in ommissions:
-					if ("pollutionLow") in lookup:
-						total *= calcMarg([("~c","pollutionLow")])
-					if ("pollutionHigh") in lookup:
-						total *= calcMarg([("~c","pollutionHigh")])
+				total *= calcMarg([("c","false")])
 
 		elif item == ("x","true"):
 			if "cancerTrue" in lookup:
@@ -334,7 +305,6 @@ def calcJoint(args):
 				total *= bayesnet[4].CPT["cancerFalse"]
 			else: 
 				total *= calcMarg([("d","true")])
-				print "marg d true", calcMarg([("d","true")])
 		elif item == ("d","false"):
 			if "cancerTrue" in lookup:
 				total *= 1-bayesnet[4].CPT["cancerTrue"]
@@ -385,28 +355,6 @@ def calcMarg(args):
 			total += bayesnet[2].CPT["pollutionHigh_smokerFalse"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerFalse"]
 			total += bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerTrue"]
 			total += bayesnet[2].CPT["pollutionLow_smokerFalse"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerFalse"]
-		elif item == ("c","pollutionLow"):
-			total += bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerTrue"]
-			total += bayesnet[2].CPT["pollutionLow_smokerFalse"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerFalse"]
-		elif item == ("c","pollutionHigh"):
-			total = bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerTrue"]
-			total += bayesnet[2].CPT["pollutionHigh_smokerFalse"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerFalse"]
-			total = total / calcMarg([("p","false")])
-		elif item == ("c","smokerTrue"):
-			total = bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerTrue"]
-			total += bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerTrue"]
-			total = total / calcMarg([("s","true")])
-		elif item == ("c","smokerFalse"):
-			total += bayesnet[2].CPT["pollutionHigh_smokerFalse"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerFalse"]
-			total += bayesnet[2].CPT["pollutionLow_smokerFalse"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerFalse"]
-		elif item == ("~c","pollutionLow"):
-			total = 1-calcMarg([("c","pollutionLow")])
-		elif item == ("~c","pollutionHigh"):
-			total = 1-calcMarg([("c","pollutionHigh")])
-		elif item == ("~c","smokerTrue"):
-			total = 1-calcMarg([("c","smokerTrue")])
-		elif item == ("~c","smokerFalse"):
-			total = 1-calcMarg([("c","smokerFalse")])
 		elif item == ("c","false"):
 			total = 1-calcMarg([("c","true")])
 		
@@ -415,31 +363,12 @@ def calcMarg(args):
 			total += bayesnet[3].CPT["cancerFalse"] * calcMarg([("c","false")])
 		elif item == ("x","false"):
 			total = 1-calcMarg([("x","true")])
-		elif item == ("x","smokerTrue"):
-			total += bayesnet[3].CPT["cancerTrue"] * bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionLow"]
-			total += bayesnet[3].CPT["cancerTrue"] * bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]
-			total += bayesnet[3].CPT["cancerFalse"] * (1-bayesnet[2].CPT["pollutionLow_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionLow"]
-			total += bayesnet[3].CPT["cancerFalse"] * (1-bayesnet[2].CPT["pollutionHigh_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]
-			denom = bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionLow"]
-			denom += bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]
-			denom += (1-bayesnet[2].CPT["pollutionLow_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionLow"]
-			denom += (1-bayesnet[2].CPT["pollutionHigh_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]
-			total = total / denom
+
 		elif item == ("d","true"):
 			total += bayesnet[4].CPT["cancerTrue"] * calcMarg([("c","true")])
 			total += bayesnet[4].CPT["cancerFalse"] * calcMarg([("c","false")])
 		elif item == ("d","false"):
 			total = 1-calcMarg([("d","true")])
-		elif item == ("d","smokerTrue"):
-			total += bayesnet[4].CPT["cancerTrue"] * bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionLow"]
-			total += bayesnet[4].CPT["cancerTrue"] * bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]
-			total += bayesnet[4].CPT["cancerFalse"] * (1-bayesnet[2].CPT["pollutionLow_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionLow"]
-			total += bayesnet[4].CPT["cancerFalse"] * (1-bayesnet[2].CPT["pollutionHigh_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]
-			denom = bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionLow"]
-			denom += bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]
-			denom += (1-bayesnet[2].CPT["pollutionLow_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionLow"]
-			denom += (1-bayesnet[2].CPT["pollutionHigh_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]
-			total = total / denom
 	return total
 
 def setPrior(args):
@@ -465,17 +394,38 @@ def setPrior(args):
 			node.CPT["pollutionLow"] = 1-val
 		P = val
 		p = 1-P
-		print 'Set pollutionLow to',p,'and pollutionHigh to',P
+		print 'Set p to',p,'and P to',P
 	elif dest == 'S':
 		for node in bayesnet:
 			node.CPT["smokerFalse"] = 1-val
 			node.CPT["smokerTrue"] = val
 		s = val
 		S = 1-s
-		print 'Set smokerTrue to',s,'and smokerFalse to',S
+		print 'Set s to',s,'and S to',S
 	else:
 		print 'Invalid input. Set either "P" or "S".'
-
+'''
+def genNet(): #pearl's network construction algorithm
+	#instantiate nodes
+	pollution = Node("pollution")
+	smoking = Node("smoking")
+	cancer = Node("cancer")
+	xray = Node("xray")
+	dys = Node("dys")
+	#specify network connections
+	pollution.children = [cancer]
+	smoking.children = [cancer]
+	cancer.parents = [pollution,smoking]
+	cancer.children = [xray,dys]
+	xray.parents = [cancer]
+	dys.parents = [cancer]
+	#list of nodes in network
+	bayesnet = [pollution,smoking,cancer,xray,dys]
+	print bayesnet
+	#setup conditional probability tables
+	for node in bayesnet:
+		node.createCPT()
+'''
 def main():
 	#genNet()
 	args = getArgs()
