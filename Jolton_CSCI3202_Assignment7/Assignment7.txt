@@ -1,0 +1,32 @@
+Jared Jolton
+CSCI 3202
+Assignment 7
+11/6/15
+___________
+
+PRIOR SAMPLING:
+p(c=True): 0.48
+p(c=True|r=True): 0.75
+p(s=True|w=True): 0.4
+p(s=True|c=True,w=True): 0.0
+
+REJECTION SAMPLING:
+p(c=True): 0.49
+p(c=True|r=True): 0.703703703704
+p(s=True|w=True): 0.4
+p(s=True|c=True,w=True): 0.0
+
+BAYESNET CALCULATIONS:
+p(c=True): 0.5
+p(c=True|r=True): 0.8
+p(s=True|w=True): 0.135
+p(s=True|c=True,w=True): 0.00621
+
+SUM SQUARED ERROR FOR PRIOR SAMPLING:
+0.01828125
+
+SUM SQUARED ERROR FOR REJECTION SAMPLING:
+0.0198994941701
+
+While the error rates for both sampling methods were low, prior sampling produced more accurate estimations.
+Please see https://github.com/2PacIsAlive/ai3202 for the programs used to compute the above values. 
