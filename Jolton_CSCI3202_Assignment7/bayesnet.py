@@ -1,8 +1,3 @@
-#Jared Jolton
-#CSCI 3202 Intro to AI
-#Assignment 6
-#Bayes Net
-
 import argparse
 import Queue
 import ipdb
@@ -15,124 +10,11 @@ class Node():
         self.parents = []
         self.children = []
         self.CPT = {}
-    def createCPT(self):
-    	keys = ["pollutionHigh", "pollutionLow",
-    		"smokerTrue", "smokerFalse"
-    		"pollutionLow_smokerTrue", "pollutionLow_smokerFalse", 
-    		"pollutionHigh_smokerTrue", "pollutionHigh_smokerFalse", 
-    		"cancerTrue", "cancerFalse", 
-    		"xrayTrue", "xrayFalse", 
-    		"dysTrue", "dysFalse"]
-    	self.CPT = dict.fromkeys(keys, None)
-    	#generate CPT values
-    	#must specify all possible combinations of parent states 
-    	if self.type == "pollution":
-    		self.CPT["pollutionHigh"] = P
-    		self.CPT["pollutionLow"] = p
-    	elif self.type == "smoker":
-    		self.CPT["smokerTrue"] = s
-    		self.CPT["smokerFalse"] = S
-    	elif self.type == "cancer":
-    		self.CPT["pollutionLow_smokerTrue"] = 0.03
-    		self.CPT["pollutionHigh_smokerTrue"] = 0.05
-    		self.CPT["pollutionLow_smokerFalse"] = 0.001
-    		self.CPT["pollutionHigh_smokerFalse"] = 0.02
-    		self.CPT["pLsT_parents"] = 0.03 * p * s 
-    		self.CPT["pHsT_parents"] = 0.05 * P * s
-    		self.CPT["pLsF_parents"] = 0.001 * p * S 
-    		self.CPT["pHsF_parents"] = 0.02 * P * S
-    	elif self.type == "xray":
-    		self.CPT["cancerTrue"] = 0.90 
-    		self.CPT["cancerFalse"] = 0.20
-    	elif self.type == "dys":
-    		self.CPT["cancerTrue"] = 0.65
-    		self.CPT["cancerFalse"] = 0.30
-
-class QueueClass():
-    def __init__(self,size):
-        self.queue = Queue.Queue()
-        self.size = size 
-    def addChar(self,char):  
-        self.queue.put(char)
-
-def getArgs():
-	parser = argparse.ArgumentParser(description='Specify program behavior.')
-	#parser.add_argument('-g', action="store_true", default=False)
-	parser.add_argument('-g', action="store", dest="conditional_probability", help="must put bar in quotes!")
-	parser.add_argument('-j', action="store", dest="joint_probability")
-	parser.add_argument('-m', action="store", dest="marginal_probability")
-	parser.add_argument('-p', action="store", dest="set_prior")
-	args=parser.parse_args()
-	return args
-
-def performAction(arguments):
-	#arguments is the namespace parsed from the command line
-	if arguments.set_prior != None:
-		setPrior(arguments.set_prior)
-	if arguments.conditional_probability != None:
-		conditionalProbability(arguments.conditional_probability)
-	if arguments.joint_probability != None:
-		jointProbability(arguments.joint_probability)
-	if arguments.marginal_probability != None:
-		marginalProbability(arguments.marginal_probability)
-
-def parseArguments(args):
-	tilde = False
-	parseMe = []
-	for char in args:
-		if char.isupper():
-			parseMe.append((char,"distribution"))
-		else:
-			if char == '~':
-				tilde = True
-			else:
-				if tilde == True:
-					parseMe.append((char,"false"))
-					tilde = False
-				else: 
-					parseMe.append((char,"true"))
-	return parseMe
-
-def parseConditionalArguments(args):
-	tilde = False
-	a = []
-	b = []
-	a1 = True
-	for char in args:
-		if char == "|":
-			a1 = False
-		else:	
-			if a1 == True:
-				if char == '~':
-					tilde = True
-				else:
-					if tilde == True:
-						a.append((char,"false"))
-						tilde = False
-					else: 
-						a.append((char,"true"))
-			else:
-				if char == '~':
-					tilde = True
-				else:
-					if tilde == True:
-						b.append((char,"false"))
-						tilde = False
-					else: 
-						b.append((char,"true"))
-	return a,b
-
-def getReasoningType(case):
-	reasoningType = None
-	if case == [("d","true")]:
-		reasoningType = "diagnostic"
-	elif case == [("s","true")]:
-		reasoningType = "predictive"
-	elif case == [("c","true")] or case == [("c","true"),("s","true")] or case == [("s","true"),("c","true")]:
-		reasoningType = "intercausal"
-	elif case == [("d","true"),("s","true")] or [("s","true"),("d","true")]:
-		reasoningType = "combined"
-	return reasoningType
+    	self.CPT = {"cT":0.5, "cF":0.5,
+    		"sT_cT":0.1, "sT_cF":0.5, 
+		"rT_cT":0.8, "rT_cF":0.2,
+		"wgT_sT_rT":0.99, "wgT_sT_rF":0.90,
+		"wgT_sF_rT":0.99}
 
 def conditionalProbability(args):
 	cP = 0
@@ -354,44 +236,45 @@ def marginalProbability(args):
 def calcMarg(args):
 	total = 0
 	for item in args:
-		if item == ("P","distribution"):
-			print "Marginal probability distribution of pollution:"
-			print "Low:",calcMarg([("p","true")]),"High:",calcMarg([("p","false")])
-		elif item == ("S","distribution"):
-			print "Marginal probability distribution of smoker:"
-			print "True:",calcMarg([("s","true")]),"False:",calcMarg([("s","false")])
-		elif item == ("C","distribution"):
-			print "Marginal probability distribution of cancer:"
-			print "True:",calcMarg([("c","true")]),"False:",calcMarg([("c","false")])
-		elif item == ("X","distribution"):
-			print "Marginal probability distribution of xray:"
-			print "True:",calcMarg([("x","true")]),"False:",calcMarg([("x","false")])
-		elif item == ("D","distribution"):
-			print "Marginal probability distribution of dyspnoea:"
-			print "True:",calcMarg([("d","true")]),"False:",calcMarg([("d","false")])
+		#cloudy
+		if item == ("c",True):
+			total += bayesnet[0].CPT["cT"] 
+		elif item == ("c",False):
+			total = 1-calcMarg([("c",True)])
+		
+		#sprinkler
+		elif item == ("s",True):
+			total += sprinkler.CPT["sT_cT"] * cloudy.CPT["cT"] 
+			total += sprinkler.CPT["sT_cF"] * cloudy.CPT["cF"]
+		elif item == ("s",False):
+			total = 1-calcMarg([("s",True)])
+		
+		#rain
+		elif item == ("r",True):
+			total += rain.CPT["rT_cT"] * cloudy.CPT["cT"] 
+			total += rain.CPT["rT_cF"] * cloudy.CPT["cF"]
+		elif item == ("r",False):
+			total = 1-calcMarg([("r",True)])
+		
+		#rain cloudy
+		elif item == ("r","cT"):
+			total += rain.CPT["rT_cT"] * cloudy.CPT["cT"]
+			total = total / calcMarg([("c",True)])
 
-		elif item == ("p","true"):
-			total += bayesnet[0].CPT["pollutionLow"] 
-		elif item == ("p","false"):
-			total = 1-calcMarg([("p","true")])
+		#wetgrass
+		elif item == ("w",True):
+			total += wetgrass.CPT["wgT_sT_rT"] * calcMarg([("s",True)]) * calcMarg([("r",True)])	
+			total += wetgrass.CPT["wgT_sT_rF"] * calcMarg([("s",True)]) * calcMarg([("r",False)])
+			total += wetgrass.CPT["wgT_sF_rT"] * calcMarg([("s",False)]) * calcMarg([("r",True)])
+		
+		elif item == ("w","sT"):
+			total += wetgrass.CPT["wgT_sT_rT"] * calcMarg([("s",True)]) * calcMarg([("r",True)])	
+			total += wetgrass.CPT["wgT_sT_rF"] * calcMarg([("s",True)]) * calcMarg([("r",False)])	
 
-		elif item == ("s","true"):
-			total += bayesnet[1].CPT["smokerTrue"] 
-		elif item == ("s","false"):
-			total = 1-calcMarg([("s","true")])
 
-		elif item == ("c","true"):
-			total += bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerTrue"]
-			total += bayesnet[2].CPT["pollutionHigh_smokerFalse"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerFalse"]
-			total += bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerTrue"]
-			total += bayesnet[2].CPT["pollutionLow_smokerFalse"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerFalse"]
-		elif item == ("c","pollutionLow"):
-			total += bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerTrue"]
-			total += bayesnet[2].CPT["pollutionLow_smokerFalse"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerFalse"]
-		elif item == ("c","pollutionHigh"):
-			total = bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerTrue"]
-			total += bayesnet[2].CPT["pollutionHigh_smokerFalse"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerFalse"]
-			total = total / calcMarg([("p","false")])
+
+
+
 		elif item == ("c","smokerTrue"):
 			total = bayesnet[2].CPT["pollutionLow_smokerTrue"] * bayesnet[0].CPT["pollutionLow"] * bayesnet[1].CPT["smokerTrue"]
 			total += bayesnet[2].CPT["pollutionHigh_smokerTrue"] * bayesnet[0].CPT["pollutionHigh"] * bayesnet[1].CPT["smokerTrue"]
@@ -409,7 +292,8 @@ def calcMarg(args):
 			total = 1-calcMarg([("c","smokerFalse")])
 		elif item == ("c","false"):
 			total = 1-calcMarg([("c","true")])
-		
+
+		#rain
 		elif item == ("x","true"):
 			total += bayesnet[3].CPT["cancerTrue"] * calcMarg([("c","true")])
 			total += bayesnet[3].CPT["cancerFalse"] * calcMarg([("c","false")])
@@ -425,6 +309,8 @@ def calcMarg(args):
 			denom += (1-bayesnet[2].CPT["pollutionLow_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionLow"]
 			denom += (1-bayesnet[2].CPT["pollutionHigh_smokerTrue"]) * bayesnet[1].CPT["smokerTrue"] * bayesnet[0].CPT["pollutionHigh"]
 			total = total / denom
+		
+		#wetgrass
 		elif item == ("d","true"):
 			total += bayesnet[4].CPT["cancerTrue"] * calcMarg([("c","true")])
 			total += bayesnet[4].CPT["cancerFalse"] * calcMarg([("c","false")])
@@ -442,96 +328,43 @@ def calcMarg(args):
 			total = total / denom
 	return total
 
-def setPrior(args):
-	print 'Setting prior for:', args
-	priorQueue = QueueClass(len(args))
-	for char in args:
-		priorQueue.addChar(char)
-	first = True
-	dest = ''
-	val = ''
-	while first:
-		current = priorQueue.queue.get()
-		if current != '=':
-			dest += current
-		else:
-			first = False
-	while not priorQueue.queue.empty():
-		val += priorQueue.queue.get()
-	val = float(val) 
-	if dest == 'P':
-		for node in bayesnet:
-			node.CPT["pollutionHigh"] = val
-			node.CPT["pollutionLow"] = 1-val
-		P = val
-		p = 1-P
-		print 'Set pollutionLow to',p,'and pollutionHigh to',P
-	elif dest == 'S':
-		for node in bayesnet:
-			node.CPT["smokerFalse"] = 1-val
-			node.CPT["smokerTrue"] = val
-		s = val
-		S = 1-s
-		print 'Set smokerTrue to',s,'and smokerFalse to',S
-	else:
-		print 'Invalid input. Set either "P" or "S".'
+def combinedReasoning():
+	total = sprinkler.CPT["sT_cT"] * cloudy.CPT["cT"] * ((wetgrass.CPT["wgT_sT_rT"] * sprinkler.CPT["sT_cT"] * rain.CPT["rT_cT"]) + (wetgrass.CPT["wgT_sT_rF"] * sprinkler.CPT["sT_cT"] * rain.CPT["sT_cF"]))
+	return total
 
 def main():
-	#genNet()
-	args = getArgs()
-	performAction(args)
-	#make sure to update nodes after setting priors
+	print "bayes net calculations..."
+	#performAction(args)
+	pC = calcMarg([("c",True)])
+	print "P(c=True):", pC
+	pCR = (calcMarg([("r","cT")]) * cloudy.CPT["cT"]) / calcMarg([("r",True)])
+	#print "wct", calcMarg([("w","sT")])
+	#print "st", calcMarg([("s",True)])
+	#print "numerator", (calcMarg([("w","sT")]) * calcMarg([("s",True)])) 
+	#print "denominator", calcMarg([("w",True)])
+	print "P(c=True|r=True):", pCR	
+	pSW = (calcMarg([("w","sT")]) * calcMarg([("s",True)])) / calcMarg([("w",True)])
+	#pSW = (wetgrass.CPT["cancerTrue"] * calcMarg([("c","true")])) / calcMarg([("d","true")]) 
+	print "P(s=True|w=True):", pSW
+	pSCW = combinedReasoning()
+	print "P(s=True|c=True,w=True):", pSCW	
 
 if __name__=="__main__":
-	#set known probabilities
-	#POLLUTION
-	P = 0.1 #high pollution
-	p = 1-P #0.9 #low pollution
-	pDist = [P,p]
-	#SMOKER
-	S = 0.70 #smoker false
-	s = 1-S #0.30 #smoker true
-	sDist = [S,s]
-	#CANCER
-	cPs = 0.05 #pollution high, smoker true
-	cPs_cond = cPs * P * s
-	cPS = 0.02 #pollution high, smoker false
-	cPS_cond = cPS * P * S
-	cps = 0.03 #pollution low, smoker true
-	cps_cond = cps * p * s
-	cpS = 0.001 #pollution high, smoker false
-	cpS_cond = cpS * p * S
-		#cancer distributions
-	cDist = [cPs,cPS,cps,cpS]
-	cDist_cond = [cPs_cond,cPS_cond,cps_cond,cpS_cond]
-	#XRAY
-	xCT = 0.90 #cancer true
-	xCF = 0.20 #cancer false
-	xDist = [xCT,xCF]
-	#BREATHING DIFFICULTY
-	dCT = 0.65 #cancer true
-	dCF = 0.30 #cancer false
-	dDist = [dCT,dCF]
-
 	#pearl's network construction algorithm
 	bayesnet = []
-	pollution = Node("pollution")
-	smoker = Node("smoker")
-	cancer = Node("cancer")
-	xray = Node("xray")
-	dys = Node("dys")
+	cloudy = Node("c")
+	sprinkler = Node("s")
+	rain = Node("r")
+	wetgrass = Node("w")
 	#specify network connections
-	pollution.children = [cancer]
-	smoker.children = [cancer]
-	cancer.parents = [pollution,smoker]
-	cancer.children = [xray,dys]
-	xray.parents = [cancer]
-	dys.parents = [cancer]
+	cloudy.children = [sprinkler,rain]
+	sprinkler.parents = [cloudy]
+	rain.parents = [cloudy]
+	sprinkler.children = [wetgrass]
+	rain.children = [wetgrass]
+	wetgrass.parents = [sprinkler,rain]
 	#list of nodes in network
-	bayesnet = [pollution,smoker,cancer,xray,dys]
-	#setup conditional probability tables
-	for node in bayesnet:
-		node.createCPT()
+	bayesnet = [cloudy,sprinkler,rain,wetgrass]
 
 	#call main
 	main()
