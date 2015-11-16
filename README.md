@@ -3,4 +3,5 @@
 <p>Assignment 1: Data Structures<br>
 Assignment 3: A* Search<br>
 Assignment 5: Markov Decision Processes and Value Iteration<br>
-Assignment 6: Bayesian Belief Network</p>
+Assignment 6: Bayesian Belief Network<br>
+Assignment 7: Sampling a Bayes Net</p>
